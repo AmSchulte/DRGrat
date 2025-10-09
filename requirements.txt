@@ -1,3 +1,4 @@
 tifffile
 streamlit-image-zoom
 scikit-image
+matplotlib
