@@ -43,7 +43,7 @@ metadata_filtered = load_metadata()
 # --------------------------
 # CONFIGURATION
 # --------------------------
-BASE_URL = "https://ftp.ebi.ac.uk/pub/databases/biostudies/.private/59/9eb224-e520-4077-8c50-e4263df9f3b0/S-BIAD/944/S-BIAD1944/Files"
+BASE_URL = "https://ftp.ebi.ac.uk/pub/databases/biostudies/S-BIAD/944/S-BIAD1944/Files"
 MICROSCOPY_TYPES = ["Apotome", "Confocal"]
 SEXES = ["males", "females"]
 TIMEPOINTS = ["1 week", "5 weeks"]
@@ -90,7 +90,6 @@ CHANNELS = metadata_filtered["Staining"].unique().tolist()
 if "atf3" in CHANNELS:
     CHANNELS.append("atf3_all")
 
-st.write(f"Available channels: {CHANNELS}")
 # remove channels that contain "png" or "tif" in their name
 CHANNELS = [ch for ch in CHANNELS if "png" not in ch and "tif" not in ch]
 
