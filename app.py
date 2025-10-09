@@ -35,11 +35,10 @@ def normalize_to_uint8(image, bit_depth=12):
 @st.cache_data
 def load_metadata():
     # Load the metadata file
-    metadata = pd.read_excel("/Users/annemariesodmann/Documents/Others/Feli/metadata_filtered.xlsx")
+    metadata = pd.read_excel("https://raw.githubusercontent.com/AmSchulte/DRGrat/main/data/metadata_filtered.xlsx")
     return metadata
 # Load the metadata
 metadata_filtered = load_metadata()
-#metadata_filtered = pd.read_excel("/Users/annemariesodmann/Documents/Others/Feli/metadata_filtered.xlsx")
 
 # --------------------------
 # CONFIGURATION
