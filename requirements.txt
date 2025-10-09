@@ -1,2 +1,2 @@
 tifffile
-treamlit-image-zoom
+streamlit-image-zoom
