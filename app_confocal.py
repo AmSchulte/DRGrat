@@ -7,7 +7,7 @@ import requests
 import shutil
 import zipfile
 
-zarr_url = "confocal example images/oib_file.zarr"
+zarr_url = "https://raw.githubusercontent.com/AmSchulte/DRGrat/main/confocal example images/oib_file.zarr"
 local_path = "oib_file.zarr"
 
 if not os.path.exists(local_path):
