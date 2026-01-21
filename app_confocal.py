@@ -2,56 +2,90 @@ import streamlit as st
 import numpy as np
 import zarr
 
-# read and cache the metadata file
+# -----------------------------
+# Utility functions
+# -----------------------------
 
-@st.cache_data
-    
 def normalize_to_uint8(image, bit_depth=16):
-    max_val = 2**bit_depth - 1
-    image = (image - np.min(image))/np.ptp(image)
-    #image = np.clip(image, 0, max_val)
+    """Normalize an image to uint8 and enhance brightness/contrast."""
+    # normalize to 0-1
+    image = (image - np.min(image)) / np.ptp(image)
+    # scale to 0-255
     image = (image / image.max()) * 255
-    # increase britness and contrast
+    # enhance brightness & contrast
     gain = 1.5
     bias = 0.1
     image = np.clip(image * gain + bias, 0, 255)
     return image.astype(np.uint8)
 
-def load_image_from_zarr(zarr_path, channel, z_plane):
-    zarr_data = zarr.load(zarr_path)
-    image = zarr_data[channel, z_plane, :, :]
-    return image
+@st.cache_resource
+def open_zarr(zarr_path):
+    """Open Zarr dataset lazily and cache it."""
+    return zarr.open(zarr_path, mode="r")
+
+def load_channels_slice(zarr_data, channel_indices, z_plane):
+    """Load selected channels at a given Z-plane as a list of 2D arrays."""
+    # Efficient: load all channels at once
+    images = zarr_data[channel_indices, z_plane, :, :]
+    if len(channel_indices) == 1:
+        return [images[0]]
+    else:
+        return [images[i] for i in range(images.shape[0])]
+
+def colorize_channel(image, channel_idx):
+    """Convert a 2D uint8 image into RGB based on channel index."""
+    if channel_idx == 0:      # Cyan
+        return np.stack([np.zeros_like(image), image, image], axis=-1)
+    elif channel_idx == 1:    # Red
+        return np.stack([image, np.zeros_like(image), np.zeros_like(image)], axis=-1)
+    elif channel_idx == 2:    # Yellow
+        return np.stack([image, image, np.zeros_like(image)], axis=-1)
+    else:
+        return np.stack([image]*3, axis=-1)  # fallback gray
+
+# -----------------------------
+# App setup
+# -----------------------------
+
+st.title("Confocal Microscopy Viewer - rat DRG")
 
 zarr_path = "confocal example images/oib_file.zarr"
-
 CHANNELS = ['NF', 'Fabp7', 'Iba1']
+
+# Sidebar controls
 st.sidebar.header("Image selection")
-# Channel selection for multiple channels
-channel = st.sidebar.segmented_control("🌈 Channel", CHANNELS, default = CHANNELS[0], selection_mode="multi")
-channel_numbers = [CHANNELS.index(c) for c in channel]
 
-# get z-planes from zarr file
+channel_selected = st.sidebar.segmented_control(
+    "🌈 Channel",
+    CHANNELS,
+    default=[CHANNELS[0]],
+    selection_mode="multi"
+)
+channel_indices = [CHANNELS.index(c) for c in channel_selected]
 
-Z_PLANES = list(range(zarr.load(zarr_path).shape[1]))
+# Lazy open Zarr
+zarr_data = open_zarr(zarr_path)
+
+# Z-plane slider
+Z_PLANES = list(range(zarr_data.shape[1]))
 z_plane = st.sidebar.select_slider("Z-Plane", Z_PLANES, value=Z_PLANES[len(Z_PLANES)//2])
 
-image_RGB = []
-for channel_n in channel_numbers:
-    image = load_image_from_zarr(zarr_path, channel_n, z_plane)
-    image = normalize_to_uint8(image)
-    # if channel_n = 0 make cyan
-    # if channel_n = 1 make red
-    # if channel_n = 2 make yellow
-    if channel_n == 0:
-        image = np.stack([np.zeros_like(image), image, image], axis=-1)
-    elif channel_n == 1:
-        image = np.stack([image, np.zeros_like(image), np.zeros_like(image)], axis=-1)
-    elif channel_n == 2:
-        image = np.stack([image, image, np.zeros_like(image)], axis=-1)
-    # combine to one image with 255 max
-    image_RGB.append(image)
+# -----------------------------
+# Load and process image
+# -----------------------------
 
-image_RGB = np.clip(np.sum(image_RGB, axis=0), 0, 255).astype(np.uint8)
+# Load selected channels for this Z-plane
+images_2D = load_channels_slice(zarr_data, channel_indices, z_plane)
 
-st.title("Confocal Microscopy of rat DRG")
+# Normalize and colorize
+images_RGB = []
+for idx, img in zip(channel_indices, images_2D):
+    img_uint8 = normalize_to_uint8(img)
+    img_colored = colorize_channel(img_uint8, idx)
+    images_RGB.append(img_colored)
+
+# Merge channels into one RGB image
+image_RGB = np.clip(np.sum(images_RGB, axis=0), 0, 255).astype(np.uint8)
+
+# Display
 st.image(image_RGB)
