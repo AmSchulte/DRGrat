@@ -3,3 +3,4 @@ streamlit-image-zoom
 scikit-image
 matplotlib
 openpyxl
+zarr
