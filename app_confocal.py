@@ -2,6 +2,25 @@ import streamlit as st
 import numpy as np
 import zarr
 
+import os
+import requests
+import shutil
+import zipfile
+
+zarr_url = "confocal example images/oib_file.zarr"
+local_path = "oib_file.zarr"
+
+if not os.path.exists(local_path):
+    # download zip
+    r = requests.get(zarr_url, stream=True)
+    r.raise_for_status()
+    with open("temp.zip", "wb") as f:
+        shutil.copyfileobj(r.raw, f)
+    # unzip
+    
+    with zipfile.ZipFile("temp.zip", "r") as zip_ref:
+        zip_ref.extractall(".")
+
 # -----------------------------
 # Utility functions
 # -----------------------------
@@ -49,7 +68,7 @@ def colorize_channel(image, channel_idx):
 
 st.title("Confocal Microscopy Viewer - rat DRG")
 
-zarr_path = "confocal example images/oib_file.zarr"
+
 CHANNELS = ['NF', 'Fabp7', 'Iba1']
 
 # Sidebar controls
@@ -64,7 +83,7 @@ channel_selected = st.sidebar.segmented_control(
 channel_indices = [CHANNELS.index(c) for c in channel_selected]
 
 # Lazy open Zarr
-zarr_data = open_zarr(zarr_path)
+zarr_data = open_zarr(local_path)
 
 # Z-plane slider
 Z_PLANES = list(range(zarr_data.shape[1]))

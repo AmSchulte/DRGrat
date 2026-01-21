@@ -4,3 +4,7 @@ scikit-image
 matplotlib
 openpyxl
 zarr
+zipfile
+os
+requests
+shutil
