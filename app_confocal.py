@@ -8,18 +8,26 @@ import shutil
 import zipfile
 
 zarr_url = "https://raw.githubusercontent.com/AmSchulte/DRGrat/main/confocal example images/oib_file.zarr"
-local_path = "oib_file.zarr"
+# Local filename for the downloaded zip
+local_zip = "oib_file.zarr.zip"
 
-if not os.path.exists(local_path):
-    # download zip
+# Folder to extract the Zarr dataset
+zarr_folder = "oib_file.zarr"
+
+# Download once if not already downloaded
+if not os.path.exists(zarr_folder):
+    print("Downloading Zarr dataset...")
     r = requests.get(zarr_url, stream=True)
     r.raise_for_status()
-    with open("temp.zip", "wb") as f:
-        shutil.copyfileobj(r.raw, f)
-    # unzip
-    
-    with zipfile.ZipFile("temp.zip", "r") as zip_ref:
-        zip_ref.extractall(".")
+    with open(local_zip, "wb") as f:
+        for chunk in r.iter_content(chunk_size=8192):
+            f.write(chunk)
+    print("Download complete. Extracting...")
+    with zipfile.ZipFile(local_zip, "r") as zip_ref:
+        zip_ref.extractall(zarr_folder)
+    print("Extraction complete.")
+else:
+    print("Zarr dataset already exists locally.")
 
 # -----------------------------
 # Utility functions
@@ -83,7 +91,7 @@ channel_selected = st.sidebar.segmented_control(
 channel_indices = [CHANNELS.index(c) for c in channel_selected]
 
 # Lazy open Zarr
-zarr_data = open_zarr(local_path)
+zarr_data = open_zarr(zarr_folder)
 
 # Z-plane slider
 Z_PLANES = list(range(zarr_data.shape[1]))
