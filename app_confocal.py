@@ -26,7 +26,7 @@ def load_image_from_zarr(zarr_path, channel, z_plane):
     image = zarr_data[channel, z_plane, :, :]
     return image
 
-@st.cache_resource(show_spinner="Preparing image...")
+@st.cache_resource(show_spinner="Preparing image in a few seconds...")
 def download_oib_as_zarr(
     url: str,
     cache_dir="data",
@@ -166,3 +166,5 @@ image_RGB = np.clip(np.sum(image_RGB, axis=0), 0, 255).astype(np.uint8)
 
 st.title("Confocal Microscopy of rat DRG")
 st.image(image_RGB)
+
+#Loading a new image can take a few seconds.
