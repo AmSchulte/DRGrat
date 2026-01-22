@@ -26,7 +26,7 @@ def load_image_from_zarr(zarr_path, channel, z_plane):
     image = zarr_data[channel, z_plane, :, :]
     return image
 
-@st.cache_resource(show_spinner="Preparing image dataset...")
+@st.cache_resource(show_spinner="Preparing image...")
 def download_oib_as_zarr(
     url: str,
     cache_dir="data",
@@ -69,28 +69,74 @@ def download_oib_as_zarr(
     z[:] = data
 
     # 🧹 Optional: remove OIB to save space
-    oib_path.unlink()
+    # oib_path.unlink()
 
     return zarr_path
 
 @st.cache_data
 def load_metadata():
     # Load the metadata file
-    metadata = pd.read_excel("metadata_filtered_confocal.xlsx")
+    metadata = pd.read_excel("/Users/annemariesodmann/Documents/Others/Feli/metadata_filtered_confocal.xlsx")
     return metadata
 # Load the metadata
 metadata_filtered_confocal = load_metadata()
 
 BASE_URL = "https://ftp.ebi.ac.uk/pub/databases/biostudies/S-BIAD/944/S-BIAD1944/Files"
+SEXES = ["males", "females"]
+TIMEPOINTS = ["1 week", "5 weeks"]
+SIDES = ["ipsilateral", "contralateral"]
+
+st.sidebar.header("Image selection")
+sex = st.sidebar.segmented_control("⚥ Sex", SEXES, default=SEXES[0])
+timepoint = st.sidebar.segmented_control("🕒 Time after CCI", TIMEPOINTS, default=TIMEPOINTS[0])
+side = st.sidebar.segmented_control("📍 Side of injury", SIDES, default=SIDES[0])
+
+
+example = 'CCI - Confocal/F5_females/Rohdaten/1W/RC54/CL/F5-RC54_CL_60x.oib'
+
+metadata_filtered_confocal = metadata_filtered_confocal[metadata_filtered_confocal['Time After CCI'] == timepoint]
+metadata_filtered_confocal = metadata_filtered_confocal[metadata_filtered_confocal['Side'] == side]
+metadata_filtered_confocal = metadata_filtered_confocal[metadata_filtered_confocal['Sex'] == sex[:-1]] 
+
+RAT_IDS = metadata_filtered_confocal["Rat ID"].unique().tolist()
+rat_id = st.sidebar.selectbox("🐀 Rat", RAT_IDS)
+
+metadata_filtered_confocal = metadata_filtered_confocal[metadata_filtered_confocal['Rat ID'] == rat_id]
+
+IMAGE_NUMBER = len(metadata_filtered_confocal["Files"])
+# make a slider for the amount of images
+image_index = st.sidebar.slider("Image number", 1, IMAGE_NUMBER, 1)
+
+image_filename = metadata_filtered_confocal["Files"].iloc[image_index - 1].split('/')[-1]
+
+if side == "ipsilateral":
+    side = "IL"
+elif side == "contralateral":
+    side = "CL"
+
+if timepoint == "1 week":
+    timepoint = "1W"
+    if sex == "males":
+        timepoint = "1W M"
+elif timepoint == "5 weeks":
+    timepoint = "5W"
+    if sex == "males":
+        timepoint = "5W M"
+
+image_path = f"{BASE_URL}/CCI%20-%20Confocal/F5_{sex}/Rohdaten/{timepoint}/{rat_id}/{side}/{image_filename}"
+
+
+
 oib_file_path = metadata_filtered_confocal['Files'].iloc[1]
 BIOIMAGE_URL = f"{BASE_URL}/CCI%20-%20{oib_file_path[6:]}"
+
+BIOIMAGE_URL = image_path
 
 zarr_path = download_oib_as_zarr(BIOIMAGE_URL)
 
 zarr_data = zarr.open(zarr_path, mode="r")
 
 CHANNELS = ['NF', 'Fabp7', 'Iba1']
-st.sidebar.header("Image selection")
 # Channel selection for multiple channels
 channel = st.sidebar.segmented_control("🌈 Channel", CHANNELS, default = CHANNELS[0], selection_mode="multi")
 channel_numbers = [CHANNELS.index(c) for c in channel]
