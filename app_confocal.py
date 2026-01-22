@@ -69,7 +69,7 @@ def download_oib_as_zarr(
     z[:] = data
 
     # 🧹 Optional: remove OIB to save space
-    # oib_path.unlink()
+    oib_path.unlink()
 
     return zarr_path
 
