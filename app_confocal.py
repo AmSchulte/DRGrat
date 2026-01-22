@@ -76,7 +76,7 @@ def download_oib_as_zarr(
 @st.cache_data
 def load_metadata():
     # Load the metadata file
-    metadata = pd.read_excel("/Users/annemariesodmann/Documents/Others/Feli/metadata_filtered_confocal.xlsx")
+    metadata = pd.read_excel("metadata_filtered_confocal.xlsx")
     return metadata
 # Load the metadata
 metadata_filtered_confocal = load_metadata()
